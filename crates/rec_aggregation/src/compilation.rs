@@ -245,15 +245,11 @@ fn build_replacements(log_inner_bytecode: usize, bytecode_zero_eval: F) -> BTree
     );
     replacements.insert(
         "MAX_BUS_WIDTH_PLACEHOLDER".to_string(),
-        max_bus_width_including_domainsep().to_string(),
+        max_bus_width_including_bytecode().to_string(),
     );
     replacements.insert(
         "LOGUP_MEMORY_DOMAINSEP_PLACEHOLDER".to_string(),
         LOGUP_MEMORY_DOMAINSEP.to_string(),
-    );
-    replacements.insert(
-        "LOGUP_PRECOMPILE_DOMAINSEP_PLACEHOLDER".to_string(),
-        LOGUP_PRECOMPILE_DOMAINSEP.to_string(),
     );
     replacements.insert(
         "LOGUP_BYTECODE_DOMAINSEP_PLACEHOLDER".to_string(),
@@ -457,7 +453,9 @@ fn air_eval_in_zk_dsl<T: TableT>(table: T) -> String
 where
     T::ExtraData: Default,
 {
-    let (constraints, bus_flag, bus_data) = get_symbolic_constraints_and_bus_data_values::<F, _>(&table);
+    let (constraints, bus_multiplicity, bus_data) = get_symbolic_constraints_and_bus_data_values::<F, _>(&table);
+    // `bus_data`'s last entry is the domainsep (logup domain separation).
+    let (bus_domainsep, bus_real_data) = bus_data.split_last().unwrap();
     let mut ctx = AirCodegenCtx::new();
 
     let mut res = format!(
@@ -474,24 +472,26 @@ where
     }
 
     // first: bus data
-    let flag = eval_air_constraint(bus_flag, None, &mut ctx, &mut res);
-    res += &format!("\n    buff = Array(DIM * {})", bus_data.len());
-    for (i, data) in bus_data.iter().enumerate() {
+    let multiplicity = eval_air_constraint(bus_multiplicity, None, &mut ctx, &mut res);
+    res += &format!("\n    buff = Array(DIM * {})", bus_real_data.len());
+    for (i, data) in bus_real_data.iter().enumerate() {
         let data_str = eval_air_constraint(*data, None, &mut ctx, &mut res);
         res += &format!("\n    copy_5({}, buff + DIM * {})", data_str, i);
     }
-    // dot product: bus_res = sum(buff[i] * logup_alphas_eq_poly[i]) for i in 0..bus_data.len()
+    let domainsep_str = eval_air_constraint(*bus_domainsep, None, &mut ctx, &mut res);
+    // bus_res = sum(buff[i] * logup_alphas_eq_poly[i]) + disc * logup_alphas_eq_poly.last()
     res += "\n    bus_res_init = Array(DIM)";
     res += &format!(
         "\n    dot_product_ee(buff, logup_alphas_eq_poly, bus_res_init, {})",
-        bus_data.len()
+        bus_real_data.len()
     );
     res += &format!(
-        "\n    bus_res: Mut = add_extension_ret(mul_base_extension_ret(LOGUP_PRECOMPILE_DOMAINSEP, logup_alphas_eq_poly + {} * DIM), bus_res_init)",
-        max_bus_width_including_domainsep().next_power_of_two() - 1
+        "\n    bus_res: Mut = add_extension_ret(mul_extension_ret({}, logup_alphas_eq_poly + {} * DIM), bus_res_init)",
+        domainsep_str,
+        max_bus_width_including_bytecode() - 1
     );
     res += "\n    bus_res = mul_extension_ret(bus_res, bus_beta)";
-    res += &format!("\n    sum: Mut = add_extension_ret(bus_res, {})", flag);
+    res += &format!("\n    sum: Mut = add_extension_ret(bus_res, {})", multiplicity);
 
     // Batch constraint weighting: single dot_product_ee(alpha_powers, constraints_buf, result, n_constraints)
     res += "\n    weighted_constraints = Array(DIM)";

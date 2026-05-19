@@ -1,8 +1,7 @@
 use crate::Table;
 
 /// Domain separation in logup
-pub const LOGUP_MEMORY_DOMAINSEP: usize = 0;
-pub const LOGUP_PRECOMPILE_DOMAINSEP: usize = 1;
+pub const LOGUP_MEMORY_DOMAINSEP: usize = 1;
 pub const LOGUP_BYTECODE_DOMAINSEP: usize = 2;
 
 /// Large field = extension field of degree DIMENSION over koala-bear

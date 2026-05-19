@@ -106,8 +106,10 @@ impl Air for Table {
     }
 }
 
-pub fn max_bus_width_including_domainsep() -> usize {
-    1 + MAX_PRECOMPILE_BUS_WIDTH.max(N_INSTRUCTION_COLUMNS) // "+1" for domain separation in logup between memory / bytecode / precompiles interactions
+pub fn max_bus_width_including_bytecode() -> usize {
+    MAX_PRECOMPILE_BUS_WIDTH
+        .max(N_INSTRUCTION_COLUMNS + 2) // 2 = +1 for PC, +1 for domainsep
+        .next_power_of_two()
 }
 
 pub fn max_air_constraints() -> usize {
@@ -127,7 +129,8 @@ mod tests {
 
     #[test]
     fn test_max_precompile_bus_width() {
-        let expected_max_bus_width = ALL_TABLES.iter().map(|table| table.bus().data.len()).max().unwrap();
+        // +1 for the domainsep
+        let expected_max_bus_width = ALL_TABLES.iter().map(|table| table.bus().data.len() + 1).max().unwrap();
         assert_eq!(MAX_PRECOMPILE_BUS_WIDTH, expected_max_bus_width);
     }
 }

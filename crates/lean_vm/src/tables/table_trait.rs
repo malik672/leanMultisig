@@ -42,7 +42,8 @@ pub enum BusData {
 #[derive(Debug)]
 pub struct Bus {
     pub direction: BusDirection,
-    pub selector: ColIndex,
+    pub multiplicity: ColIndex,
+    pub domainsep: BusData,
     pub data: Vec<BusData>,
 }
 
