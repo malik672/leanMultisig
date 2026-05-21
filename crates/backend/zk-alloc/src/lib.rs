@@ -100,8 +100,12 @@ pub fn init() {
 /// Activates the arena and resets every thread's slab. All allocations until the next
 /// `end_phase()` go to the arena; the previous phase's data is overwritten in place.
 pub fn begin_phase() {
+    let prev_active = ARENA_ACTIVE.swap(true, Ordering::Release);
+    assert!(
+        !prev_active,
+        "begin_phase() called while another phase is already active — phases must not nest"
+    );
     GENERATION.fetch_add(1, Ordering::Release);
-    ARENA_ACTIVE.store(true, Ordering::Release);
 }
 
 /// Deactivates the arena. New allocations go to the system allocator; existing arena
