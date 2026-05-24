@@ -41,7 +41,8 @@ pub fn prove_execution(
     } = info_span!("Witness generation").in_scope(|| -> Result<_, ProverError> {
         let execution_result = info_span!("Executing bytecode")
             .in_scope(|| try_execute_bytecode(bytecode, public_input, witness, vm_profiler))?;
-        Ok(info_span!("Building execution trace").in_scope(|| get_execution_trace(bytecode, execution_result)))
+        Ok(info_span!("Building execution trace")
+            .in_scope(|| get_execution_trace(bytecode, execution_result, &witness.min_table_log_n_rows)))
     })?;
 
     // Memory must be at least MIN_LOG_MEMORY_SIZE and at least bytecode size

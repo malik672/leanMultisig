@@ -155,6 +155,7 @@ pub fn merge_many_type_1(
     let witness = ExecutionWitness {
         preamble_memory_len: PREAMBLE_MEMORY_LEN,
         hints,
+        min_table_log_n_rows: Default::default(),
     };
     let execution_proof = prove_execution(bytecode, &public_input_digest, &witness, &whir_config, false)?;
 
@@ -257,6 +258,7 @@ pub fn split_type_2(
     let witness = ExecutionWitness {
         preamble_memory_len: PREAMBLE_MEMORY_LEN,
         hints,
+        min_table_log_n_rows: Default::default(),
     };
     let execution_proof = prove_execution(bytecode, &outer_digest, &witness, &whir_config, false)?;
 
