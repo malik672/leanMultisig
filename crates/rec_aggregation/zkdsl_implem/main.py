@@ -193,7 +193,8 @@ def main():
         counter += 1
         pk0 = all_pubkeys + idx0 * PUB_KEY_SIZE
         running_hash: Mut = Array(DIGEST_LEN)
-        poseidon16_compress(ZERO_VEC_PTR, pk0, running_hash)
+        iv = build_iv(n_sub * PUB_KEY_SIZE)
+        poseidon16_compress(iv, pk0, running_hash)
 
         for j in dynamic_unroll(1, n_sub, log2_ceil(MAX_N_SIGS)):
             idx = sub_indices_arr[j]

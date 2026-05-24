@@ -8,6 +8,7 @@ use field::BasedVectorSpace;
 use field::ExtensionField;
 use field::Field;
 use field::PackedValue;
+use field::PrimeCharacteristicRing;
 use koala_bear::{KoalaBear, QuinticExtensionFieldKB, default_koalabear_poseidon1_16};
 use poly::*;
 
@@ -63,8 +64,12 @@ fn build_merkle_tree_koalabear(
 ) -> RoundMerkleTree<KoalaBear> {
     let perm = default_koalabear_poseidon1_16();
     let n_zero_suffix_rate_chunks = (full_base_width - effective_base_width) / 8;
-    let scalar_state =
-        symetric::precompute_zero_suffix_state::<KoalaBear, _, 16, 8, DIGEST_ELEMS>(&perm, n_zero_suffix_rate_chunks);
+    let iv_first = KoalaBear::from_usize(full_base_width);
+    let scalar_state = symetric::precompute_zero_suffix_state::<KoalaBear, _, 16, 8, DIGEST_ELEMS>(
+        &perm,
+        iv_first,
+        n_zero_suffix_rate_chunks,
+    );
     let packed_state: [PFPacking<KoalaBear>; 16] =
         std::array::from_fn(|i| PFPacking::<KoalaBear>::from_fn(|_| scalar_state[i]));
     let first_layer = first_digest_layer_with_initial_state::<PFPacking<KoalaBear>, _, _, DIGEST_ELEMS, 16, 8>(
@@ -153,7 +158,7 @@ pub struct WhirMerkleTree<F, M, const DIGEST_ELEMS: usize> {
     full_leaf_base_width: usize,
 }
 
-impl<F: Clone + Copy + Default + Send + Sync, M: Matrix<F>, const DIGEST_ELEMS: usize>
+impl<F: field::PrimeCharacteristicRing + Send + Sync, M: Matrix<F>, const DIGEST_ELEMS: usize>
     WhirMerkleTree<F, M, DIGEST_ELEMS>
 {
     #[instrument(name = "build merkle tree", skip_all)]
@@ -168,8 +173,10 @@ impl<F: Clone + Copy + Default + Send + Sync, M: Matrix<F>, const DIGEST_ELEMS: 
         Perm: Compression<[F; WIDTH]> + Compression<[P; WIDTH]>,
     {
         let n_zero_suffix_rate_chunks = (full_leaf_base_width - effective_base_width) / RATE;
+        let iv_first = F::from_usize(full_leaf_base_width);
         let scalar_state = symetric::precompute_zero_suffix_state::<F, Perm, WIDTH, RATE, DIGEST_ELEMS>(
             perm,
+            iv_first,
             n_zero_suffix_rate_chunks,
         );
         let packed_state: [P; WIDTH] = std::array::from_fn(|i| P::from_fn(|_| scalar_state[i]));
