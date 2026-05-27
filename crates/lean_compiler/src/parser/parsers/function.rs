@@ -135,9 +135,17 @@ impl FunctionParser {
 pub struct ParameterParser;
 
 impl Parse<FunctionArg> for ParameterParser {
-    fn parse(&self, pair: ParsePair<'_>, _ctx: &mut ParseContext) -> ParseResult<FunctionArg> {
+    fn parse(&self, pair: ParsePair<'_>, ctx: &mut ParseContext) -> ParseResult<FunctionArg> {
         let mut inner = pair.into_inner();
         let name = next_inner_pair(&mut inner, "parameter name")?.as_str().to_string();
+
+        // Reject parameter names that shadow a top-level constant or const array.
+        if ctx.get_const_array(&name).is_some() || ctx.get_constant(&name).is_some() {
+            return Err(SemanticError::new(format!(
+                "Parameter '{name}' shadows a top-level constant of the same name"
+            ))
+            .into());
+        }
 
         // Check for optional type annotation (: Const or : Mut)
         let (is_const, is_mutable) = if let Some(annotation) = inner.next() {
