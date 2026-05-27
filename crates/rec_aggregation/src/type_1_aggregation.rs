@@ -231,10 +231,7 @@ pub(crate) fn aggregate_type_1_with_min_padding(
         );
     }
     let message = &message;
-    let verified_children: Vec<InnerVerified> = children
-        .iter()
-        .map(|c| verify_type_1(c).expect("child proof failed to verify"))
-        .collect();
+    let verified_children: Vec<InnerVerified> = children.iter().map(verify_type_1).collect::<Result<_, _>>()?;
     let children: Vec<&[XmssPublicKey]> = children.iter().map(|c| c.info.pubkeys.as_slice()).collect();
     let children = children.as_slice();
 

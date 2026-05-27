@@ -101,10 +101,7 @@ pub fn merge_many_type_1(
     let whir_config = default_whir_config(log_inv_rate);
     let bytecode = get_aggregation_bytecode();
 
-    let verified_children: Vec<InnerVerified> = types_1
-        .iter()
-        .map(|sig| verify_type_1(sig).expect("component proof failed to verify"))
-        .collect();
+    let verified_children: Vec<InnerVerified> = types_1.iter().map(verify_type_1).collect::<Result<_, _>>()?;
 
     let reduced_claims = reduce_bytecode_claims(&verified_children);
 
@@ -209,7 +206,7 @@ pub fn split_type_2(
     let whir_config = default_whir_config(log_inv_rate);
     let bytecode = get_aggregation_bytecode();
 
-    let outer_verified = verify_type_2(&type_2).expect("type-2 outer proof failed to verify");
+    let outer_verified = verify_type_2(&type_2)?;
 
     let reduced_claims = reduce_bytecode_claims(std::slice::from_ref(&outer_verified));
     let bytecode_value_hint_blob = flatten_scalars_to_base(&[outer_verified.bytecode_evaluation.value]);

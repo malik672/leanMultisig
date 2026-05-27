@@ -68,6 +68,7 @@ pub enum ProverError {
     UnknownMessage,
     MultipleMessages,
     InvalidPublicInputSize { expected: usize, actual: usize },
+    InvalidChildProof(ProofError),
 }
 
 impl From<TooBigTableError> for ProverError {
@@ -82,6 +83,12 @@ impl From<RunnerError> for ProverError {
     }
 }
 
+impl From<ProofError> for ProverError {
+    fn from(err: ProofError) -> Self {
+        Self::InvalidChildProof(err)
+    }
+}
+
 impl Display for ProverError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -92,6 +99,7 @@ impl Display for ProverError {
             Self::InvalidPublicInputSize { expected, actual } => {
                 write!(f, "Invalid public input size: expected {}, actual {}", expected, actual)
             }
+            Self::InvalidChildProof(e) => write!(f, "Invalid child proof: {}", e),
         }
     }
 }
