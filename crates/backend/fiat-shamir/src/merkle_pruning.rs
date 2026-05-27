@@ -101,6 +101,9 @@ impl<Data: Clone, F: Clone> PrunedMerklePaths<Data, F> {
         if self.n_trailing_zeros > 1024 {
             return None; // prevent DoS with huge leaf data
         }
+        if self.leaf_data.len() != n {
+            return None;
+        }
         self.leaf_data
             .iter_mut()
             .for_each(|d| d.resize(d.len() + self.n_trailing_zeros, Data::default()));
