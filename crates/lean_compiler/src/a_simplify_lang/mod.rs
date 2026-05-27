@@ -2486,9 +2486,11 @@ fn simplify_expr(
                     })
                     .collect::<Result<Vec<_>, String>>()?;
 
+                let navigated = arr
+                    .navigate(&simplified_index)
+                    .ok_or_else(|| format!("Const array index out of bounds for array '{name}'"))?;
                 return Ok(SimpleExpr::Constant(ConstExpression::scalar(
-                    arr.navigate(&simplified_index)
-                        .unwrap_or_else(|| panic!("Const array index out of bounds for array '{}'", name))
+                    navigated
                         .as_scalar()
                         .expect("Const array access should return a scalar"),
                 )));
