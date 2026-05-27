@@ -614,7 +614,9 @@ fn compile_lines(
             }
             SimpleLine::HintWitness { destination, name } => {
                 let SimpleExpr::Memory(VarOrConstMallocAccess::Var(ptr_var)) = destination else {
-                    panic!("hint_witness: destination must be a plain variable, got {destination}")
+                    return Err(format!(
+                        "hint_witness: destination must be a plain variable, got {destination}"
+                    ));
                 };
                 let hint_destination = if let Some(IntermediateValue::FpRelative { offset }) =
                     try_precompile_fp_relative(destination, compiler)
