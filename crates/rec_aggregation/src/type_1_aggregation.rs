@@ -77,6 +77,9 @@ pub(crate) fn check_type_one_pubkeys(pubkeys: &[XmssPublicKey]) -> Result<(), &'
     if pubkeys.is_empty() {
         return Err("pubkeys must be non-empty");
     }
+    if pubkeys.len() > MAX_XMSS_AGGREGATED {
+        return Err("too many pubkeys (exceeds MAX_XMSS_AGGREGATED)");
+    }
     if !pubkeys.windows(2).all(|w| w[0] < w[1]) {
         return Err("pubkeys must be strictly sorted (no duplicates)");
     }
