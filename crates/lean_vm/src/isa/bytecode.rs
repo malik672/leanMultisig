@@ -18,7 +18,7 @@ pub struct CodeEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bytecode {
     pub unpadded_size: usize,
-    pub code: Vec<CodeEntry>,
+    pub code: Vec<CodeEntry>, // assumed to be well-formed
     pub instructions_multilinear: Vec<F>,
     pub starting_frame_memory: usize,
     pub ending_pc: usize, // Must equal `code.len() - 1`.

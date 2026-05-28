@@ -146,6 +146,7 @@ pub fn xmss_key_gen(
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum XmssSignatureError {
     SlotOutOfRange,
+    InvalidRandomness,
 }
 
 pub fn xmss_sign<R: CryptoRng>(
@@ -168,7 +169,9 @@ pub fn xmss_sign_with_randomness(
         return Err(XmssSignatureError::SlotOutOfRange);
     }
     let wots_secret_key = gen_wots_secret_key(&secret_key.seed, slot, secret_key.public_param);
-    let wots_signature = wots_secret_key.sign_with_randomness(message, slot, &secret_key.public_key(), randomness);
+    let wots_signature = wots_secret_key
+        .sign_with_randomness(message, slot, &secret_key.public_key(), randomness)
+        .ok_or(XmssSignatureError::InvalidRandomness)?;
     let merkle_proof = std::array::from_fn(|level| {
         let neighbour_index = ((slot as u64) >> level) ^ 1;
         let base = (secret_key.slot_start as u64) >> level;
