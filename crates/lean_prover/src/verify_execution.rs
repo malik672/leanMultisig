@@ -222,6 +222,7 @@ pub fn verify_execution(
         .into_iter()
         .map(|(t, _)| t.index())
         .collect();
+    verifier_state.check_fully_consumed()?;
     Ok((
         ProofVerificationDetails {
             bytecode_evaluation: logup_statements.bytecode_evaluation.unwrap(),

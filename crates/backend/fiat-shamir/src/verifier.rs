@@ -46,6 +46,16 @@ where
         }
     }
 
+    pub fn check_fully_consumed(&self) -> Result<(), ProofError> {
+        if self.transcript_offset != self.transcript.len()
+            || self.merkle_opening_index != self.merkle_openings.len()
+            || !self.pending_merkle_paths.is_empty()
+        {
+            return Err(ProofError::InvalidProof);
+        }
+        Ok(())
+    }
+
     fn absorb_and_record(&mut self, scalars: &[PF<EF>]) {
         self.challenger.observe_many(scalars);
         let total_padded = scalars.len().next_multiple_of(RATE);
