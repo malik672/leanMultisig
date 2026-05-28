@@ -1302,6 +1302,14 @@ fn check_block_scoping(block: &[Line], ctx: &mut Context) -> Result<(), String> 
     for line in block.iter() {
         match line {
             Line::ForwardDeclaration { var, .. } => {
+                if ctx.defines(var) {
+                    let in_current_scope = ctx.scopes.last().is_some_and(|s| s.vars.contains(var));
+                    return Err(if in_current_scope {
+                        format!("Variable '{var}' declared multiple times in the same scope")
+                    } else {
+                        format!("Declaration of '{var}' shadows a name visible in an enclosing scope")
+                    });
+                }
                 ctx.add_var(var);
             }
             Line::Match { value, arms, .. } => {
