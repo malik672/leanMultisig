@@ -157,7 +157,11 @@ impl CustomHint {
                 let to_decompose_ptr = args[1].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let num_to_decompose = args[2].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let chunk_size = args[3].read_value(ctx.memory, ctx.fp)?.to_usize();
-                assert!(24_usize.is_multiple_of(chunk_size));
+                if chunk_size == 0 || !24_usize.is_multiple_of(chunk_size) {
+                    return Err(RunnerError::InvalidHintArguments(format!(
+                        "DecomposeBitsXMSS: chunk_size {chunk_size} must be a nonzero divisor of 24"
+                    )));
+                }
                 let mut memory_index_decomposed = decomposed_ptr;
                 #[allow(clippy::explicit_counter_loop)]
                 for i in 0..num_to_decompose {
@@ -173,7 +177,11 @@ impl CustomHint {
                 let decomposed_ptr = args[0].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let value = args[1].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let chunk_size = args[2].read_value(ctx.memory, ctx.fp)?.to_usize();
-                assert!(24_usize.is_multiple_of(chunk_size));
+                if chunk_size == 0 || !24_usize.is_multiple_of(chunk_size) {
+                    return Err(RunnerError::InvalidHintArguments(format!(
+                        "DecomposeBitsMerkleWhir: chunk_size {chunk_size} must be a nonzero divisor of 24"
+                    )));
+                }
                 let mut memory_index_decomposed = decomposed_ptr;
                 #[allow(clippy::explicit_counter_loop)]
                 for i in 0..24 / chunk_size {
@@ -186,7 +194,12 @@ impl CustomHint {
                 let to_decompose = args[0].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let memory_index = args[1].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let num_bits = args[2].read_value(ctx.memory, ctx.fp)?.to_usize();
-                assert!(num_bits <= F::bits());
+                if num_bits > F::bits() {
+                    return Err(RunnerError::InvalidHintArguments(format!(
+                        "DecomposeBits: num_bits {num_bits} exceeds field size {}",
+                        F::bits()
+                    )));
+                }
                 ctx.memory
                     .set_slice(memory_index, &to_big_endian_in_field::<F>(to_decompose, num_bits))?
             }
@@ -207,7 +220,9 @@ impl CustomHint {
                 let b = args[1].read_value(ctx.memory, ctx.fp)?.to_usize();
                 let q_ptr = args[2].memory_address(ctx.fp)?;
                 let r_ptr = args[3].memory_address(ctx.fp)?;
-                assert!(b != 0, "hint_div_floor: division by zero");
+                if b == 0 {
+                    return Err(RunnerError::DivByZero);
+                }
                 ctx.memory.set(q_ptr, F::from_usize(a / b))?;
                 ctx.memory.set(r_ptr, F::from_usize(a % b))?;
             }
