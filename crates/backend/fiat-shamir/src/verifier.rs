@@ -165,6 +165,8 @@ where
         if self.challenger.state[CAPACITY].as_canonical_u64() & ((1 << bits) - 1) != 0 {
             return Err(ProofError::InvalidGrindingWitness);
         }
+        // On "compressed" proofs (in Rust), we assume only the first field element is pow-grinded (the RATE-1 others are zero) -> saves a bit of proof size
+        // On "raw" proofs (without Prunned merkle paths, the one used in recursion program (fiat_shamir.py) / python verifier (verifier.py) -> what's actually specified), we assume all 8 field elements are pow-grinded
         self.raw_transcript.push(witness);
         self.raw_transcript.extend(repeat_n(PF::<EF>::ZERO, RATE - 1));
         Ok(())

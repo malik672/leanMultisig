@@ -218,7 +218,7 @@ class FiatShamir(DuplexSpongeChallenger):
     def check_pow_grinding(self, bits: int) -> None:
         if bits == 0:
             return
-        self._read_padded(1)
+        self._read_padded(SPONGE_RATE)
         if int(self.state[SPONGE_CAPACITY].value) & ((1 << bits) - 1) != 0:
             raise ProofError("InvalidGrindingWitness")
 
