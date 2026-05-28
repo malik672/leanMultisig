@@ -211,7 +211,7 @@ pub fn xmss_verify(
 ) -> Result<(), XmssVerifyError> {
     let wots_public_key = signature
         .wots_signature
-        .recover_public_key(message, slot, pub_key, &signature.wots_signature)
+        .recover_public_key(message, slot, pub_key)
         .ok_or(XmssVerifyError::InvalidWots)?;
     let mut current_hash = wots_public_key.hash(pub_key.public_param, slot);
     for (level, neighbour) in signature.merkle_proof.iter().enumerate() {

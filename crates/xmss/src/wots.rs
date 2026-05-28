@@ -75,9 +75,8 @@ impl WotsSignature {
         message: &[F; MESSAGE_LEN_FE],
         slot: u32,
         xmss_pub_key: &XmssPublicKey,
-        signature: &Self,
     ) -> Option<WotsPublicKey> {
-        let encoding = wots_encode(message, slot, xmss_pub_key, &signature.randomness)?;
+        let encoding = wots_encode(message, slot, xmss_pub_key, &self.randomness)?;
         Some(WotsPublicKey(std::array::from_fn(|i| {
             iterate_hash(
                 &self.chain_tips[i],
