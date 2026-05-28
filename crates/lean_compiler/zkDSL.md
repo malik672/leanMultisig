@@ -458,9 +458,10 @@ The four supported comparison operators are `==`, `!=`, `<`, `<=` (no `>` or
 
 ### Range checks: `assert a < b` and `assert a <= b`
 
-**The program must ensure `b <= 2^16`.** The compiler does not check this
-(`b` may be a runtime value). Violating the bound is a critical soundness
-vulnerability.
+- When the inequality is strict: `assert a < b`, **The program must ensure `b <= 2^16`.**
+- When the inequality is non-strict: `assert a <= b`, **The program must ensure `b < 2^16`.**
+
+The compiler does not check this (`b` may be a runtime value). Violating the bound is a critical soundness vulnerability.
 
 *Under the hood: the compiler proves `a < b` by emitting two DEREF instructions,
 which check that `a` and `b - 1 - a` are both valid memory addresses. An
