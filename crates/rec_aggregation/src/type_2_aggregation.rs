@@ -211,7 +211,9 @@ pub fn split_type_2(
     log_inv_rate: usize,
 ) -> Result<TypeOneMultiSignature, ProverError> {
     let n_components = type_2.info.len();
-    assert!(index < n_components, "split index {index} out of bounds");
+    if index >= n_components {
+        return Err(ProverError::InvalidSplitIndex { index, n_components });
+    }
     if n_components > MAX_RECURSIONS {
         return Err(ProverError::LimitExceeded {
             what: "type-2 components",

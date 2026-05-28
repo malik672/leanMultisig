@@ -69,6 +69,10 @@ pub enum ProverError {
     MultipleMessages,
     InvalidRate,
     InvalidChildProof(ProofError),
+    InvalidSplitIndex {
+        index: usize,
+        n_components: usize,
+    },
     LimitExceeded {
         what: &'static str,
         actual: usize,
@@ -106,6 +110,9 @@ impl Display for ProverError {
                 "LeanVM supports rate 1/2, 1/4, 1/8 and 1/16 (log_inv_rate in {{1, 2, 3, 4}})"
             ),
             Self::InvalidChildProof(e) => write!(f, "Invalid child proof: {}", e),
+            Self::InvalidSplitIndex { index, n_components } => {
+                write!(f, "Invalid split index {index} for {n_components} components")
+            }
             Self::LimitExceeded { what, actual, max } => {
                 write!(f, "Too many {}: {} (max {})", what, actual, max)
             }
