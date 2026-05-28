@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::collections::VecDeque;
 use std::iter::repeat_n;
 
 use crate::{
@@ -16,6 +17,7 @@ pub struct VerifierState<EF: ExtensionField<PF<EF>>, P> {
     challenger: Challenger<PF<EF>, P>,
     transcript: Vec<PF<EF>>,
     transcript_offset: usize,
+    pending_merkle_paths: VecDeque<PrunedMerklePaths<PF<EF>, PF<EF>>>,
     merkle_openings: Vec<MerkleOpening<PF<EF>>>,
     merkle_opening_index: usize,
     raw_transcript: Vec<PF<EF>>, // reconstructed during the proof verification, it's the format that the zkVM recursion program expects (no Merkle pruning, no sumcheck optimization to send less data, etc)
@@ -26,17 +28,12 @@ where
     PF<EF>: PrimeField64,
 {
     pub fn new(proof: Proof<PF<EF>>, permutation: P, capacity: [PF<EF>; CAPACITY]) -> Result<Self, ProofError> {
-        let mut merkle_openings = Vec::new();
-        for paths in proof.merkle_paths {
-            let restored = Self::restore_merkle_paths(paths).ok_or(ProofError::InvalidProof)?;
-            merkle_openings.extend(restored);
-        }
-
         Ok(Self {
             challenger: Challenger::new(permutation, capacity),
             transcript: proof.transcript,
             transcript_offset: 0,
-            merkle_openings,
+            pending_merkle_paths: proof.merkle_paths.into(),
+            merkle_openings: Vec::new(),
             merkle_opening_index: 0,
             raw_transcript: Vec::new(),
         })
@@ -132,6 +129,22 @@ where
         let scalars = self.read_transcript(n)?;
         self.absorb_and_record(&scalars);
         Ok(scalars)
+    }
+
+    fn begin_merkle_opening_batch(&mut self, n: usize) -> Result<(), ProofError> {
+        if self.merkle_opening_index != self.merkle_openings.len() {
+            return Err(ProofError::InvalidProof); // Previous batch must have been fully drained
+        }
+        let paths = self
+            .pending_merkle_paths
+            .pop_front()
+            .ok_or(ProofError::ExceededTranscript)?;
+        if paths.original_order.len() != n {
+            return Err(ProofError::InvalidProof);
+        }
+        let restored = Self::restore_merkle_paths(paths).ok_or(ProofError::InvalidProof)?;
+        self.merkle_openings.extend(restored);
+        Ok(())
     }
 
     fn next_merkle_opening(&mut self) -> Result<MerkleOpening<PF<EF>>, ProofError> {

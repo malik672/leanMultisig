@@ -301,6 +301,7 @@ where
         F: Field + ExtensionField<PF<EF>>,
         EF: ExtensionField<F>,
     {
+        verifier_state.begin_merkle_opening_batch(indices.len())?;
         let res = if leafs_base_field {
             let mut answers = Vec::<Vec<F>>::new();
             let mut merkle_proofs = Vec::new();
