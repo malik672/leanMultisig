@@ -67,10 +67,6 @@ pub enum ProverError {
     Runner(RunnerError),
     UnknownMessage,
     MultipleMessages,
-    InvalidPublicInputSize {
-        expected: usize,
-        actual: usize,
-    },
     InvalidChildProof(ProofError),
     LimitExceeded {
         what: &'static str,
@@ -104,9 +100,6 @@ impl Display for ProverError {
             Self::Runner(e) => write!(f, "{}", e),
             Self::UnknownMessage => write!(f, "Unknown message, not part of the type2"),
             Self::MultipleMessages => write!(f, "Multiple common messages in the type2"),
-            Self::InvalidPublicInputSize { expected, actual } => {
-                write!(f, "Invalid public input size: expected {}, actual {}", expected, actual)
-            }
             Self::InvalidChildProof(e) => write!(f, "Invalid child proof: {}", e),
             Self::LimitExceeded { what, actual, max } => {
                 write!(f, "Too many {}: {} (max {})", what, actual, max)

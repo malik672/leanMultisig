@@ -16,14 +16,17 @@ MIN_STACKED_N_VARS = MIN_STACKED_N_VARS_PLACEHOLDER
 
 
 def whir_open(
-    fs: Mut,
+    prev_fs,
     n_vars,
     initial_log_inv_rate,
-    root: Mut,
+    prev_root,
     ood_points_commit,
     combination_randomness_powers_0,
-    claimed_sum: Mut,
+    prev_claimed_sum,
 ):
+    fs: Mut = prev_fs
+    root: Mut = prev_root
+    claimed_sum: Mut = prev_claimed_sum
     n_rounds, n_final_vars, num_queries, num_oods, query_grinding_bits, folding_grinding = get_whir_params(
         n_vars, initial_log_inv_rate
     )
@@ -39,7 +42,7 @@ def whir_open(
 
     domain_sz: Mut = n_vars + initial_log_inv_rate
     for r in range(0, n_rounds):
-        is_first_round: Imu
+        is_first_round: Imm
         if r == 0:
             is_first_round = 1
         else:
@@ -175,13 +178,15 @@ def whir_open(
     return fs, folding_randomness_global, s, final_value, end_sum
 
 
-def sumcheck_verify(fs: Mut, n_steps, claimed_sum, degree: Const):
+def sumcheck_verify(fs, n_steps, claimed_sum, degree: Const):
     challenges = Array(n_steps * DIM)
-    fs, new_claimed_sum = sumcheck_verify_helper(fs, n_steps, claimed_sum, degree, challenges)
-    return fs, challenges, new_claimed_sum
+    new_fs, new_claimed_sum = sumcheck_verify_helper(fs, n_steps, claimed_sum, degree, challenges)
+    return new_fs, challenges, new_claimed_sum
 
 
-def sumcheck_verify_helper(fs: Mut, n_steps, claimed_sum: Mut, degree: Const, challenges):
+def sumcheck_verify_helper(prev_fs, n_steps, prev_claimed_sum, degree: Const, challenges):
+    fs: Mut = prev_fs
+    claimed_sum: Mut = prev_claimed_sum
     for sc_round in range(0, n_steps):
         fs, poly = fs_receive_ef_inlined(fs, degree + 1)
         polynomial_sum_at_0_and_1(poly, degree, claimed_sum)
@@ -192,10 +197,10 @@ def sumcheck_verify_helper(fs: Mut, n_steps, claimed_sum: Mut, degree: Const, ch
     return fs, claimed_sum
 
 
-def sumcheck_verify_reversed(fs: Mut, n_steps, claimed_sum: Mut, degree: Const):
+def sumcheck_verify_reversed(fs, n_steps, claimed_sum, degree: Const):
     challenges = Array(n_steps * DIM)
-    fs, new_claimed_sum = sumcheck_verify_reversed_helper(fs, n_steps, claimed_sum, degree, challenges)
-    return fs, challenges, new_claimed_sum
+    new_fs, final_claimed_sum = sumcheck_verify_reversed_helper(fs, n_steps, claimed_sum, degree, challenges)
+    return new_fs, challenges, final_claimed_sum
 
 
 def sumcheck_verify_reversed_helper(fs, n_steps, claimed_sum, degree: Const, challenges):
@@ -208,7 +213,9 @@ def sumcheck_verify_reversed_helper(fs, n_steps, claimed_sum, degree: Const, cha
     return new_fd, final_sum
 
 
-def sumcheck_verify_reversed_helper_const(fs: Mut, n_steps: Const, claimed_sum: Mut, degree: Const, challenges):
+def sumcheck_verify_reversed_helper_const(prev_fs, n_steps: Const, prev_claimed_sum, degree: Const, challenges):
+    fs: Mut = prev_fs
+    claimed_sum: Mut = prev_claimed_sum
     for sc_round in unroll(0, n_steps):
         fs, poly = fs_receive_ef_inlined(fs, degree + 1)
         polynomial_sum_at_0_and_1(poly, degree, claimed_sum)
@@ -219,7 +226,9 @@ def sumcheck_verify_reversed_helper_const(fs: Mut, n_steps: Const, claimed_sum: 
     return fs, claimed_sum
 
 
-def sumcheck_verify_with_grinding(fs: Mut, n_steps, claimed_sum: Mut, degree: Const, folding_grinding_bits):
+def sumcheck_verify_with_grinding(prev_fs, n_steps, prev_claimed_sum, degree: Const, folding_grinding_bits):
+    fs: Mut = prev_fs
+    claimed_sum: Mut = prev_claimed_sum
     challenges = Array(n_steps * DIM)
     for sc_round in range(0, n_steps):
         fs, poly = fs_receive_ef_inlined(fs, degree + 1)
@@ -285,7 +294,7 @@ def decompose_and_verify_merkle_batch_const(
 
 
 def sample_stir_indexes_and_fold(
-    fs: Mut,
+    prev_fs,
     num_queries,
     merkle_leaves_in_basefield,
     folding_factor,
@@ -295,6 +304,7 @@ def sample_stir_indexes_and_fold(
     folding_randomness,
     query_grinding_bits,
 ):
+    fs: Mut = prev_fs
     folded_domain_size = domain_size - folding_factor
 
     fs = fs_grinding(fs, query_grinding_bits)
@@ -303,7 +313,7 @@ def sample_stir_indexes_and_fold(
     merkle_leaves = Array(num_queries)
     circle_values = Array(num_queries)
 
-    n_chunks_per_answer: Imu
+    n_chunks_per_answer: Imm
     # the number of chunk of 8 field elements per merkle leaf opened
     if merkle_leaves_in_basefield == 1:
         n_chunks_per_answer = two_pow_folding_factor
@@ -335,7 +345,7 @@ def sample_stir_indexes_and_fold(
 
 
 def whir_round(
-    fs: Mut,
+    prev_fs,
     prev_root,
     folding_factor,
     two_pow_folding_factor,
@@ -347,6 +357,7 @@ def whir_round(
     num_ood,
     folding_grinding_bits,
 ):
+    fs: Mut = prev_fs
     fs, folding_randomness, new_claimed_sum_a = sumcheck_verify_with_grinding(
         fs, folding_factor, claimed_sum, 2, folding_grinding_bits
     )
@@ -398,21 +409,24 @@ def polynomial_sum_at_0_and_1(coeffs, degree, dst):
     return
 
 
-def parse_commitment(fs: Mut, num_ood):
-    root: Imu
-    ood_points: Imu
-    ood_evals: Imu
+def parse_commitment(fs, num_ood):
+    root: Imm
+    ood_points: Imm
+    ood_evals: Imm
     debug_assert(num_ood < 5)
     debug_assert(num_ood != 0)
-    fs, root, ood_points, ood_evals = match_range(num_ood, range(1, 5), lambda n: parse_whir_commitment_const(fs, n))
-    return fs, root, ood_points, ood_evals
+    new_fs, root, ood_points, ood_evals = match_range(
+        num_ood, range(1, 5), lambda n: parse_whir_commitment_const(fs, n)
+    )
+    return new_fs, root, ood_points, ood_evals
 
 
-def parse_whir_commitment_const(fs: Mut, num_ood: Const):
-    fs, root = fs_receive_chunks(fs, 1)
-    fs, ood_points = fs_sample_many_ef(fs, num_ood)
-    fs, ood_evals = fs_receive_ef_inlined(fs, num_ood)
-    return fs, root, ood_points, ood_evals
+def parse_whir_commitment_const(fs, num_ood: Const):
+    new_fs: Mut
+    new_fs, root = fs_receive_chunks(fs, 1)
+    new_fs, ood_points = fs_sample_many_ef(new_fs, num_ood)
+    new_fs, ood_evals = fs_receive_ef_inlined(new_fs, num_ood)
+    return new_fs, root, ood_points, ood_evals
 
 
 @inline
@@ -427,15 +441,15 @@ def get_whir_params(n_vars, log_inv_rate):
 
     debug_assert(MIN_WHIR_LOG_INV_RATE <= log_inv_rate)
     debug_assert(log_inv_rate <= MAX_WHIR_LOG_INV_RATE)
-    num_queries: Imu
+    num_queries: Imm
     num_queries = get_num_queries(log_inv_rate, n_vars)
 
-    query_grinding_bits: Imu
+    query_grinding_bits: Imm
     query_grinding_bits = get_query_grinding_bits(log_inv_rate, n_vars)
 
     num_oods = get_num_oods(log_inv_rate, n_vars)
 
-    folding_grinding: Imu
+    folding_grinding: Imm
     folding_grinding = get_folding_grinding(log_inv_rate, n_vars)
 
     return n_rounds, final_vars, num_queries, num_oods, query_grinding_bits, folding_grinding

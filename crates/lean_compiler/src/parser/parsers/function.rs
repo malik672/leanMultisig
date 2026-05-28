@@ -15,11 +15,14 @@ pub const RESERVED_FUNCTION_NAMES: &[&str] = &[
     // Built-in functions
     "print",
     "Array",
+    "hint_witness",
     // Compile-time only functions
     "len",
     "log2_ceil",
     "next_multiple_of",
     "saturating_sub",
+    "div_ceil",
+    "div_floor",
     "range",
     "parallel_range",
     "match_range",
@@ -155,22 +158,24 @@ impl Parse<FunctionArg> for ParameterParser {
             .into());
         }
 
-        // Check for optional type annotation (: Const or : Mut)
-        let (is_const, is_mutable) = if let Some(annotation) = inner.next() {
+        // Check for optional type annotation (: Const). ': Mut' parameters are forbidden.
+        let is_const = if let Some(annotation) = inner.next() {
             match annotation.as_str().trim() {
-                ": Const" => (true, false),
-                ": Mut" => (false, true),
+                ": Const" => true,
+                ": Mut" => {
+                    return Err(SemanticError::new(format!(
+                        "Parameter '{name}' cannot be declared ': Mut'. Mutable parameters are not allowed; \
+                         introduce a local '{name}_mut: Mut = {name}' instead."
+                    ))
+                    .into());
+                }
                 other => return Err(SemanticError::new(format!("Invalid parameter annotation: {other}")).into()),
             }
         } else {
-            (false, false)
+            false
         };
 
-        Ok(FunctionArg {
-            name,
-            is_const,
-            is_mutable,
-        })
+        Ok(FunctionArg { name, is_const })
     }
 }
 
