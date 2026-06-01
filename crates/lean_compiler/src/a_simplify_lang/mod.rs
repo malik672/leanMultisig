@@ -1220,6 +1220,18 @@ fn check_expr_scoping(expr: &Expression, ctx: &Context) -> Result<(), String> {
             lambda_ctx.add_var(param);
             check_expr_scoping(body, &lambda_ctx)
         }
+        Expression::ArrayAccess { array, index } => {
+            for idx in index {
+                check_expr_scoping(idx, ctx)?;
+            }
+            if let Some(name) = array.as_var()
+                && !ctx.const_arrays.contains_key(name)
+                && !ctx.defines(name)
+            {
+                return Err(format!("Variable used but not defined: {name}"));
+            }
+            Ok(())
+        }
         _ => {
             for inner_expr in expr.inner_exprs() {
                 check_expr_scoping(inner_expr, ctx)?;
